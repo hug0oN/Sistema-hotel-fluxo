@@ -1,64 +1,190 @@
 const prompt = require('prompt-sync')(); //esse aqui eh o melhor jeito que eu achei para fazer input
 //talvez precise instalar o prompt sync antes
 
+const { setTimeout } = require('node:timers/promises'); //aqui uma parte que precisa pra
+//poder colocar um intervalo entre mensagens (uma funcao pra esperar)
+
+let proximoIdFuncionario = 1;
+let proximoIdCliente = 1; //aqui a parte de id dos funcionarios e clientes
+
+const funcionarios = [];
+const clientes = [];
+
 class sistema{
     constructor(){ //construtor so pra uma variavel eh sacanagem
         this.dev_mode = false;
     }
 
     ativar_dev(){ //ativa o dev mode, que vai habilitar varias mensagens de teste
+        if(this.dev_mode == false){
         this.dev_mode = true;
-        if(Sistema.dev_mode == true){
-            console.log("DEV: Modo dev ativado");
+        console.log("DEV: Modo dev ativado");
+        }
+        else{
+            this.dev_mode = false;
+            console.log("Modo dev desativado");
+
         }
     }
-    
-    login(){
-
-        if(Sistema.dev_mod == true){
-        console.log("DEV: Iniciando processo de login");
-        }
-        console.log("Você é funcionário ou cliente?");
+    async primeiro_menu(){ //primeiro menu que abre (async precisa pro delay das mensagens)
+        console.log("-------------------------------------------------------") //usar essas linhas como divisoria
+        console.log("Bem-Vindo!");
+        await setTimeout(1000);
+        console.log("") //como eu ainda nao sei pular uma linha vou colocar uns logs vazios
         //aqui pesquisar alguma maneira de criar uma janela de input e multipla escolha 
         //ao inves de digitacao
         //se nao der eu uso numeros (opcao 1 2 3 etc)
 
-        nome_login = prompt("Por favor digite seu nome de usuário: ");
+        console.log("1. Login");
 
+        await setTimeout(1000);
 
-        senha_login = prompt("Agora digite sua senha: ");
+        console.log("");
+
+        console.log("2. Cadastro");
+
+        await setTimeout(1000);
+
+        console.log("");
+
+        console.log("3. Sair");
+
+        await setTimeout(1000);
+        
+        if(Sistema.dev_mode == true){
+            console.log("");
+            console.log("4. Desativar Modo Dev");
+        }
+        console.log("-------------------------------------------------------")
+        const opcao = prompt("Escolha uma opção: ")
+        if(opcao == 1){
+            console.clear();
+            return await this.login();
+        }
+        if(opcao == 2){
+            console.clear();
+            await this.cadastro(); //isso eh bem bizarro, preciso de um await na chamada 
+            //senao ele pula os await dentro do cadastro, mesmo as funcao sendo async
+            return this.primeiro_menu();
+        }
+        if(opcao == 4){
+            console.log("MODO DEV ATIVADO");
+            this.ativar_dev();
+            this.primeiro_menu(); //volta pro menu depois de ativar o dev
+        }
+        else{
+            this.sair();
+        }
+    }
+    
+    async login(){
+
+        if(Sistema.dev_mod == true){
+        console.log("DEV: Iniciando processo de login");
+        }
+        console.log("Você é funcionário ou cliente?"); //Escolher entre funcionario e cliente
+        console.log("");
+        console.log("1. Funcionário");
+        console.log("");
+        console.log("2. Cliente");
+        console.log("-------------------------------------------------------");
+        const tipo_login = prompt("Escolha uma opção: ")
+
+        const nome_login = prompt("Por favor digite seu nome de usuário: ");
+        const senha_login = prompt("Agora digite sua senha: ");
+
+        if(tipo_login == 1){
+            const funcionarioEncontrado = funcionarios.find(f => f.nome === nome_login);//vai procurar o funcionario na lista
+            //variavel vai ser undefined se nao achar nada 
+            if(funcionarioEncontrado && funcionarioEncontrado.checar_Senha(senha_login)){
+                console.clear();
+                console.log(`BEM VINDO ${funcionarioEncontrado.nome}!`)
+                await setTimeout(1500);
+                console.clear();
+                return this.menu_funcionario();
+            }
+        }
+        if(tipo_login == 2){
+            const clienteEncontrado = clientes.find(c => c.nome === nome_login); //procurar o cliente com mesmo nome na lista
+            if(clienteEncontrado && clienteEncontrado.checar_Senha(senha_login)){
+                console.clear();
+                console.log(`BEM VINDO ${clienteEncontrado.nome}!`);
+                await setTimeout(1500);
+                console.clear();
+                return this.menu_cliente();
+            }
+        }
 
 
     }
-    cadastro(){
-        tipo_cadastro;
+    async cadastro(){
         if(Sistema.dev_mod == true){
         console.log("DEV: Iniciando processo de cadastro");
         }
-        //Escolher entre funcionario e cliente
+        console.log("Você é funcionário ou cliente?"); //Escolher entre funcionario e cliente
+        console.log("");
+        console.log("1. Funcionário");
+        console.log("");
+        console.log("2. Cliente");
+        console.log("-------------------------------------------------------");
+        const tipo_cadastro = prompt("Escolha uma opção: ")
+        if(tipo_cadastro == 1){
+            console.clear();
+            //receber os dados necessarios para funcionario
+            const nome = prompt("Nome: ");
+            const cpf = prompt("CPF: ");
+            const email = prompt("Email: ");
+            const senha = prompt("Senha: ");
 
-        tipo_cadastro = 1;
-        
-        tipo_cadastro = 2;
+            const id = proximoIdFuncionario++; //aqui um placeholder de id unico, vai incrementandi entao nunca vao ter dois iguais
 
-        //receber inputs dos dados
+            const novo_funcionario = new funcionario(id, nome, cpf, email, senha); //chamar construtor com os dados
 
-        //fazer o id unico
+            funcionarios.push(novo_funcionario); //coloa o novo cara la no array
 
-        //chamar construtor
+            console.clear();
+            console.log("");
+            console.log("Cadastro realizado com sucesso!");
+            console.log("Por favor faça login na sua nova conta");
+            await setTimeout(1500);
+            console.clear();    
+            return;
+        }
+        if(tipo_cadastro == 2){
+            console.clear();
+            //receber os dados necessarios para cliente
+            const nome = prompt("Nome: ");
+            const cpf = prompt("CPF: ");
+            const data_nasc = prompt("Data de Nascimento(DD/MM/ANO): ");
+            const email = prompt("Email: ");
+            const senha = prompt("Senha: ");
 
-        //ir para o menu de cliente/funcionario
+            const id = proximoIdCliente++; //id unico dele definido por ordem de registro
+            const novo_cliente = new cliente(id, nome, cpf, data_nasc, email, senha);
+
+            clientes.push(novo_cliente); //coloca ele no array
+            console.clear();
+            console.log("");
+            console.log("Cadastro realizado com sucesso!");
+            console.log("Por favor faça login na sua nova conta");
+            await setTimeout(1500);
+            console.clear();
+            return;
+
+        }
+        console.clear();
+        console.log("Opção inválida.");
+        this.cadastro();
     }
 
     menu_cliente(){
 
-
+        console.log("NADA AQUI AINDA KKKKKKKK");
     }
 
 
     menu_funcionario(){
-
-
+        console.log("NADA AQUI AINDA KKKKKKKK");
     }
 
     sair(){
@@ -157,6 +283,9 @@ class funcionario{
     ver_lista_funcionarios(){
 
     }
+    checar_Senha(senha_proposta){
+        return this.#senha == senha_proposta; //verificaçao da senha, ja que é privada 
+    }
 
 }
 
@@ -184,6 +313,9 @@ class cliente{
     }
     mudar_dados_cliente(){
 
+    }
+    checar_Senha(senha_proposta){
+        return this.#senha == senha_proposta; //verificaçao da senha, ja que é privada 
     }
 
 
@@ -217,4 +349,6 @@ class quartos{
 
 
 }
+
+Sistema.primeiro_menu();
 
