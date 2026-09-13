@@ -7,12 +7,15 @@ const { setTimeout } = require('node:timers/promises'); //aqui uma parte que pre
 let proximoIdFuncionario = 1;
 let proximoIdCliente = 1; //aqui a parte de id dos funcionarios e clientes
 
+let usuario_logado;
+
 const funcionarios = [];
 const clientes = [];
 
 class sistema{
-    constructor(){ //construtor so pra uma variavel eh sacanagem
+    constructor(){ 
         this.dev_mode = false;
+        this.usuario_logado = null; //aqui armazenar o usuario logado atualmente
     }
 
     ativar_dev(){ //ativa o dev mode, que vai habilitar varias mensagens de teste
@@ -79,7 +82,7 @@ class sistema{
     
     async login(){
 
-        if(Sistema.dev_mod == true){
+        if(Sistema.dev_mode == true){
         console.log("DEV: Iniciando processo de login");
         }
         console.log("Você é funcionário ou cliente?"); //Escolher entre funcionario e cliente
@@ -101,7 +104,13 @@ class sistema{
                 console.log(`BEM VINDO ${funcionarioEncontrado.nome}!`)
                 await setTimeout(1500);
                 console.clear();
-                return this.menu_funcionario();
+                this.usuario_logado = funcionarioEncontrado;
+                return this.menu_funcionario(funcionarioEncontrado);
+            }
+            else{
+                console.clear();
+                console.log("Senha ou usuário incorretos! Tente novamente!");
+                this.login();
             }
         }
         if(tipo_login == 2){
@@ -111,8 +120,19 @@ class sistema{
                 console.log(`BEM VINDO ${clienteEncontrado.nome}!`);
                 await setTimeout(1500);
                 console.clear();
-                return this.menu_cliente();
+                this.usuario_logado = clienteEncontrado;
+                return this.menu_cliente(clienteEncontrado);
             }
+            else{
+                console.clear();
+                console.log("Senha ou usuário incorretos! Tente novamente!");
+                this.login();
+            }
+        }
+        else{
+            console.clear();
+            console.log("Opção inválida!");
+            this.login();
         }
 
 
@@ -177,14 +197,77 @@ class sistema{
         this.cadastro();
     }
 
-    menu_cliente(){
+    menu_cliente(cliente){
+        console.log("");
+        console.log(`Bem vindo cliente ${cliente.nome}`);
+        console.log("-------------------------------------------------------");
+        console.log("1. Ver meus dados");
+        console.log("");
+        console.log("2. Ver lista de quartos");
+        console.log("");
+        console.log("3. Fazer reserva");
+        console.log("");
+        console.log("4. Cancelar reserva");
+        console.log("");
+        console.log("5. Ver minhas reservas");
+        console.log("-------------------------------------------------------");
+        const opcao = prompt("Escolha uma opção: ")
+        if(opcao == 1){
+            return ver_dados(cliente);
+        }
+        if(opcao == 2){
+            return ver_lista_quartos();
+        }
+        if(opcao == 3){
+            return cliente.fazer_reserva();
+        }
+        if(opcao == 4){
+            return cliente.cancelar_reserva();
+        }
+        if(opcao == 5){
+            return cliente.ver_reservas();
+        }
 
-        console.log("NADA AQUI AINDA KKKKKKKK");
+
+
     }
 
 
-    menu_funcionario(){
-        console.log("NADA AQUI AINDA KKKKKKKK");
+    menu_funcionario(funcionario){
+        console.log("");
+        console.log(`Bem vindo funcionário ${funcionario.nome}`);
+        console.log("-------------------------------------------------------");
+        console.log("1. Ver meus dados");
+        console.log("");
+        console.log("2. Ver lista de quartos");
+        console.log("");
+        console.log("3. Ver lista de reservas");
+        console.log("");
+        console.log("4. Ver lista de clientes");
+        console.log("");
+        console.log("5. Mudar status de reserva");
+        console.log("");
+        console.log("6. Adicionar quarto");
+        console.log("-------------------------------------------------------");
+        const opcao = prompt("Escolha uma opção: ")
+        if(opcao == 1){
+            return ver_dados(funcionario);
+        }
+        if(opcao == 2){
+            return ver_lista_quartos();
+        }
+        if(opcao == 3){
+            return funcionario.ver_lista_reservas();
+        }
+        if(opcao == 4){
+            return funcionario.ver_lista_clientes();
+        }
+        if(opcao == 5){
+            return funcionario.mudar_reserva();
+        }
+        if(opcao == 6){
+            return funcionario.add_quarto();
+        }
     }
 
     sair(){
@@ -222,6 +305,18 @@ function ver_avaliacao(){
 function ver_lista_quartos(){
     //puxar todos os quartos em uma lista
 
+}
+
+function voltar(){ //funcao global de voltar, que pode ser usado por qualquer usuario
+    if (!this.usuario_logado) {
+        return this.primeiro_menu();
+    }
+    if (this.usuario_logado instanceof funcionario) { //verifica se o usuario atual é da classe funcionario
+        return this.menu_funcionario();
+    }
+    if (this.usuario_logado instanceof cliente) { //verifica se o usuario atual é da classe cliente
+        return this.menu_cliente();
+    }
 }
 
 
@@ -281,6 +376,9 @@ class funcionario{
 
     }
     ver_lista_funcionarios(){
+
+    }
+    ver_lista_reservas(){
 
     }
     checar_Senha(senha_proposta){
