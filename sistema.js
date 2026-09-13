@@ -5,14 +5,17 @@ const { setTimeout } = require('node:timers/promises'); //aqui uma parte que pre
 //poder colocar um intervalo entre mensagens (uma funcao pra esperar)
 
 let proximoIdFuncionario = 1;
-let proximoIdCliente = 1; //aqui a parte de id dos funcionarios e clientes
+let proximoIdCliente = 1; //aqui a parte de id dos objetos
 let proximoIdQuarto = 1;
+let proximoIdReserva = 1;
 
 let usuario_logado;
 
+//array de todos os objetos a serem armazenados
 const funcionarios = [];
 const clientes = [];
 const lista_quartos = [];
+const reservas = [];
 
 class sistema{
     constructor(){ 
@@ -304,8 +307,8 @@ class sistema{
             console.log("-------------------------------------------------------");//linha divisoria entre cada quarto
         });
     }
-
-    prompt("\nPressione ENTER para voltar ao menu...");//testar um input para sair, pra poder dar tempo ilimitado pro usuario ler
+    console.log("");
+    prompt("Pressione ENTER para voltar ao menu...");//testar um input para sair, pra poder dar tempo ilimitado pro usuario ler
     console.clear();
     
     return voltar();
@@ -354,18 +357,20 @@ function voltar(){ //funcao global de voltar, que pode ser usado por qualquer us
 
 
 class reserva{
-    constructor(cliente, entrada, saida){
+    constructor(id, cliente, quarto, entrada, saida, noites){
+        this.id = id;
         this.cliente = cliente;
         this.status = "Normal";
         this.entrada = entrada;
         this.saida = saida;
-        //parte para a construcao do id unico
-        //id unicos sao compartilhados entre funcionarios e clientes
-        //o q vai facilitar pra chamar funcoes globais
+        this.noites = noites;
+        this.quarto = quarto;
+        this.valor = (this.quarto.preco)*(this.noites); //ja calculando o valor pelas noites vezes o preço por noite
+       
 
     }
     cancelar(){
-
+        this.quarto.disponivel = true; //deixa oquarto disponivel denovo
         this.status = "Cancelada."
     }
     check_out(){
@@ -374,6 +379,11 @@ class reserva{
     }
     avaliar_estadia(){
 
+    }
+    exibir_detalhes() { //funcao a ser chamada quando o cliente for ver as suas reservas
+        console.log(`[ID Reserva: ${this.id}] Quarto ${this.quarto.numero} | Cliente: ${this.cliente.nome}`);
+        console.log(`  Período: ${this.entrada} até ${this.saida} (${this.noites} noites)`);
+        console.log(`  Valor Total: R$${this.valor} | Status: ${this.status}`);
     }
 
 
@@ -390,9 +400,53 @@ class funcionario{
         this.#senha = senha;
         this.id = id;
     }
-    mudar_reserva(){
+    async mudar_reserva(){
+        console.clear();
+        console.log("Mudar dados de uma reserva:");
+        if (reservas.length === 0) {
+            console.log("Nenhuma reserva cadastrada.");
+            console.log("");
+            prompt("Pressione ENTER para voltar...");
+         return await voltar();
+    }
+        reservas.forEach(r => r.exibir_detalhes());//imprimindo todas as reservas
+        console.log("-------------------------------------------------------");
+        const idReserva = prompt("Digite o ID da reserva: ");//pede e acha a reserva
+        const reservaEncontrada = reservas.find(r => r.id == idReserva);
+        if (!reservaEncontrada) {
+            console.clear();
+            console.log("");
+            console.log("Reserva não encontrada!");
+            await setTimeout(1500);
+            return await voltar();
+        }
+        console.log("");
+        console.log("Status atuais: 1. Ativa | 2. Concluída (Check-out) | 3. Cancelada");
+        const opcao = prompt("Escolha o novo status: ");
+
+        if (opcao == 1) {
+        reservaEncontrada.status = "Ativa";
+        reservaEncontrada.quarto.disponivel = false;
+        } 
+        else if (opcao == 2) {
+        reservaEncontrada.check_out();
+        reservaEncontrada.quarto.disponivel = true;
+        } 
+        else if (opcao == 3) {
+        reservaEncontrada.cancelar();
+        } 
+        else {
+        console.log("Opção inválida.");
+        await setTimeout(1000);
+        return await voltar();
+        }
+        console.log("");
+        console.log("Status atualizado com sucesso!");
+        await setTimeout(1500);
+        return await voltar();
 
     }
+
     async add_quarto(){
         console.clear();
         console.log("Cadastrando novo quarto:");
@@ -414,12 +468,15 @@ class funcionario{
         return await voltar(); //to tendo que botar esses await senao dá errado
 
     }
+
     mudar_dados(){
 
     }
+
     excluir_quarto(){
 
     }
+
     editar_quartos(){
 
     }
@@ -429,7 +486,21 @@ class funcionario{
     ver_lista_funcionarios(){
 
     }
-    ver_lista_reservas(){
+    async ver_lista_reservas(){
+        console.clear();
+        console.log("Todas as reservas do sistema:");
+        if (reservas.length === 0) {
+            console.log("Nenhuma reserva registrada até o momento.");
+        }
+        else {
+        reservas.forEach(r => {
+                r.exibir_detalhes();
+                console.log("-------------------------------------------------------");
+            });
+        }
+        console.log("");//como eh so pra ver acaba aqui mesmo
+        prompt("Pressione ENTER para voltar...");
+        return await voltar();
 
     }
     checar_Senha(senha_proposta){
@@ -451,15 +522,107 @@ class cliente{
         this.id = id;
         
     }
-    fazer_reserva(){
+    async fazer_reserva(){
+        console.clear();
+        console.log("Fazendo reserva...");
+
+        const quartosDisponiveis = lista_quartos.filter(q => q.disponivel); //funcao para filtrar em quartos que estejam disponiveis
+        //ou seja, a variavel disponivel do quarto seja = true
+        //isso cria um novo array só com quartos disponiveis
+
+        if (quartosDisponiveis.length === 0) { //se nao tiver nenhum quarto disponivel, ou seja, o novo array nao tem elementos 
+            console.log("Não há quartos disponíveis no momento.");
+            console.log("");
+            prompt("Pressione ENTER para voltar...");
+            return await voltar();
+    }
+
+        console.log("Quartos disponíveis:");
+        console.log("");
+        quartosDisponiveis.forEach(q => q.exibir_detalhes()); //itera cada quarto e chama a funcao para imprimir as info
+        console.log("-------------------------------------------------------");
+
+        const idQuarto = prompt("Digite o ID do quarto que deseja reservar: "); //pede o num do quarto desejado
+        const quartoSelecionado = quartosDisponiveis.find(q => q.id == idQuarto);//vai buscar qual quarto foi selecionado
+
+        if (!quartoSelecionado) {
+            console.log("");
+            console.log("ID de quarto inválido ou indisponível!");
+            await setTimeout(1500);
+            return await this.fazer_reserva();
+        }
+        console.log("Perfeito! Agora alguns detalhes da sua estadia:");
+        const entrada = prompt("Data de Entrada (DD/MM/AAAA): ");
+        const saida = prompt("Data de Saída (DD/MM/AAAA): ");
+        const noites = Number(prompt("Quantidade de noites: "));
+
+        const id = proximoIdReserva++;
+        const novaReserva = new reserva(id, this, quartoSelecionado, entrada, saida, noites);
+
+
+        quartoSelecionado.disponivel = false;//troca a disponibilidade do quarto
+        reservas.push(novaReserva);//aloca a reserva no array de reservas
+        console.clear();
+        console.log("Reserva realizada com sucesso!");
+        console.log(`Valor total da reserva: R$${novaReserva.valor}`);
+        await setTimeout(2000);
+        return await voltar();
 
     }
-    cancelar_reserva(){
+    async cancelar_reserva(){
+        console.clear();
+        console.log("Cancelar reserva:");
+        const minhasReservasAtivas = reservas.filter(r => r.cliente.id === this.id && r.status === "Normal"); //procura reservas 
+        //do cliente que estejam Normais
+
+        if (minhasReservasAtivas.length === 0) {//se nao tiver reservas volta pro menu anterior
+            console.log("Você não tem reservas ativas para cancelar.");
+            console.log("");
+            prompt("Pressione ENTER para voltar...");
+            return await voltar();
+        }
+        minhasReservasAtivas.forEach(r => r.exibir_detalhes());//itera para imprimir reservas
+        console.log("-------------------------------------------------------");
+
+        const idReserva = prompt("Digite o ID da reserva que deseja cancelar: ");
+        const reservaEncontrada = minhasReservasAtivas.find(r => r.id == idReserva);
+        //pede qual reserva cancelar e procura ela na lista de reservas
+
+        if (!reservaEncontrada) {
+            console.clear();
+            console.log("ID de reserva inválido!");
+            await setTimeout(1500);
+            return await voltar();
+        }
+        reservaEncontrada.cancelar();
+        console.clear();
+        console.log("Reserva cancelada com sucesso!");
+        await setTimeout(1500);
+        return await voltar();
+
 
     }
-    ver_reservas(){
+    async ver_reservas(){
+        console.clear();
+        console.log("Suas reservas:");
 
+        const minhasReservas = reservas.filter(r => r.cliente.id === this.id);//filtra as reservas para o id desse cliente
+
+        if (minhasReservas.length === 0) {//verifica se o cliente nao tem reservas (array do filtro vazio)
+            console.log("Você ainda não possui nenhuma reserva.");
+        } 
+        else {
+        minhasReservas.forEach(r => { //imprime cada reserva
+            r.exibir_detalhes();
+            console.log("-------------------------------------------------------");
+            });
+        }
+        console.log("");
+        prompt("Pressione ENTER para voltar...");
+        console.clear(); //pede input para sair para dar tempo de leitura
+        return await voltar();
     }
+
     mudar_dados_cliente(){
 
     }
@@ -491,7 +654,7 @@ class Quarto{
         this.preco = preco;
         this.numero = numero;
         this.descricao = descricao;
-        this.disponivel = true;
+        this.disponivel = true; //variavel para disponibilidade, para reservas 
     }
     mudar_dados_quarto(){
 
@@ -505,14 +668,20 @@ class Quarto{
 
 
 }
+
 //aqui vou colocar uns casos teste pra agilizar testagem
+//se deus quiser hugo do futuro vai lembrar de tirar isso antes de mandar
 const cliente_teste = new cliente(0, "b", 123, "01/01/1500", "algum_email@gmail.com", "b");
 clientes.push(cliente_teste);
 
 const funcionario_teste = new funcionario(0, "a", 124, "email@gmail.com", "a");
 funcionarios.push(funcionario_teste);
 
+const quarto_teste1 = new Quarto(proximoIdQuarto++, "101", 1, 150, "Quarto Solteiro Confortável")
+lista_quartos.push(quarto_teste1);
+
+const quarto_teste2 = new Quarto(proximoIdQuarto++, "102", 2, 280, "Quarto Casal Luxo")
+lista_quartos.push(quarto_teste2);
 
 
 Sistema.primeiro_menu(); //chama o primeiro menu para iniciar
-
