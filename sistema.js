@@ -6,11 +6,13 @@ const { setTimeout } = require('node:timers/promises'); //aqui uma parte que pre
 
 let proximoIdFuncionario = 1;
 let proximoIdCliente = 1; //aqui a parte de id dos funcionarios e clientes
+let proximoIdQuarto = 1;
 
 let usuario_logado;
 
 const funcionarios = [];
 const clientes = [];
+const lista_quartos = [];
 
 class sistema{
     constructor(){ 
@@ -68,7 +70,7 @@ class sistema{
             console.clear();
             await this.cadastro(); //isso eh bem bizarro, preciso de um await na chamada 
             //senao ele pula os await dentro do cadastro, mesmo as funcao sendo async
-            return this.primeiro_menu();
+            return await this.primeiro_menu();
         }
         if(opcao == 4){
             console.log("MODO DEV ATIVADO");
@@ -160,7 +162,7 @@ class sistema{
 
             const novo_funcionario = new funcionario(id, nome, cpf, email, senha); //chamar construtor com os dados
 
-            funcionarios.push(novo_funcionario); //coloa o novo cara la no array
+            funcionarios.push(novo_funcionario); //coloca o novo cara la no array
 
             console.clear();
             console.log("");
@@ -210,13 +212,15 @@ class sistema{
         console.log("4. Cancelar reserva");
         console.log("");
         console.log("5. Ver minhas reservas");
+        console.log("");
+        console.log("6. Sair");
         console.log("-------------------------------------------------------");
         const opcao = prompt("Escolha uma opção: ")
         if(opcao == 1){
             return ver_dados(cliente);
         }
         if(opcao == 2){
-            return ver_lista_quartos();
+            return this.ver_lista_quartos();
         }
         if(opcao == 3){
             return cliente.fazer_reserva();
@@ -226,6 +230,11 @@ class sistema{
         }
         if(opcao == 5){
             return cliente.ver_reservas();
+        }
+        if(opcao == 6){
+            this.usuario_logado = null; //reseta o usuario logado pra voltar pro menu principal
+            console.clear();
+            return voltar();
         }
 
 
@@ -248,13 +257,15 @@ class sistema{
         console.log("5. Mudar status de reserva");
         console.log("");
         console.log("6. Adicionar quarto");
+        console.log("");
+        console.log("7. Sair");
         console.log("-------------------------------------------------------");
         const opcao = prompt("Escolha uma opção: ")
         if(opcao == 1){
             return ver_dados(funcionario);
         }
         if(opcao == 2){
-            return ver_lista_quartos();
+            return this.ver_lista_quartos();
         }
         if(opcao == 3){
             return funcionario.ver_lista_reservas();
@@ -268,11 +279,38 @@ class sistema{
         if(opcao == 6){
             return funcionario.add_quarto();
         }
+        if(opcao == 7){
+            this.usuario_logado = null; //reseta o usuario logado pra voltar pro menu principal
+            console.clear();
+            return voltar();
+        }
     }
 
     sair(){
+
         process.exit(0);
+
     }
+
+    ver_lista_quartos(){ //movido para ca ao inves de ser uma func global para poder acessar usuario_logado
+        console.clear();
+        console.log("Lista de quartos:");
+    
+    if (lista_quartos.length === 0) {//se nao tiver nenhum, dá essa mensagem
+        console.log("Nenhum quarto cadastrado até o momento.");
+    } else {
+        lista_quartos.forEach(quarto => { //vai iterar a lista, para cada quarto, chama a func de exibir informaçoes
+            quarto.exibir_detalhes();
+            console.log("-------------------------------------------------------");//linha divisoria entre cada quarto
+        });
+    }
+
+    prompt("\nPressione ENTER para voltar ao menu...");//testar um input para sair, pra poder dar tempo ilimitado pro usuario ler
+    console.clear();
+    
+    return voltar();
+
+}
 
 }
 const Sistema = new sistema;
@@ -302,20 +340,15 @@ function ver_avaliacao(){
 
 }
 
-function ver_lista_quartos(){
-    //puxar todos os quartos em uma lista
-
-}
-
 function voltar(){ //funcao global de voltar, que pode ser usado por qualquer usuario
-    if (!this.usuario_logado) {
-        return this.primeiro_menu();
+    if (!Sistema.usuario_logado) {
+        return Sistema.primeiro_menu();
     }
-    if (this.usuario_logado instanceof funcionario) { //verifica se o usuario atual é da classe funcionario
-        return this.menu_funcionario();
+    if (Sistema.usuario_logado instanceof funcionario) { //verifica se o usuario atual é da classe funcionario
+        return Sistema.menu_funcionario(Sistema.usuario_logado);
     }
-    if (this.usuario_logado instanceof cliente) { //verifica se o usuario atual é da classe cliente
-        return this.menu_cliente();
+    if (Sistema.usuario_logado instanceof cliente) { //verifica se o usuario atual é da classe cliente
+        return Sistema.menu_cliente(Sistema.usuario_logado);
     }
 }
 
@@ -360,7 +393,25 @@ class funcionario{
     mudar_reserva(){
 
     }
-    add_quarto(){
+    async add_quarto(){
+        console.clear();
+        console.log("Cadastrando novo quarto:");
+
+        const numero = prompt("Número do quarto (ex: 101): "); //pegando as info pra chamar construtor
+        const n_camas = prompt("Quantidade de camas: ");
+        const preco = prompt("Preço por noite (R$): ");
+        const descricao = prompt("Descrição breve: ");
+        const id = proximoIdQuarto++;
+
+        const novoQuarto = new Quarto(id, numero, Number(n_camas), Number(preco), descricao);
+
+        lista_quartos.push(novoQuarto); //adiciona o quarto na lista la em cima
+
+        console.clear();
+        console.log("\nQuarto cadastrado com sucesso!");
+        await setTimeout(1500);
+        console.clear();
+        return await voltar(); //to tendo que botar esses await senao dá errado
 
     }
     mudar_dados(){
@@ -433,20 +484,35 @@ class avaliacao{
 
 }
 
-class quartos{
-    constructor(n_camas, preco, nome, descricao){
+class Quarto{
+    constructor(id, numero, n_camas, preco, descricao){
+        this.id = id;
         this.n_camas = n_camas;
         this.preco = preco;
-        this.nome = nome;
+        this.numero = numero;
         this.descricao = descricao;
+        this.disponivel = true;
     }
     mudar_dados_quarto(){
 
+    }
+    exibir_detalhes() {
+        const status = this.disponivel ? "Disponível" : "Ocupado"; //aqui uma maneira melhor que eu achei ao inves de usar dois if
+        console.log(`[ID: ${this.id}] Quarto ${this.numero} | Camas: ${this.n_camas} | R$${this.preco}/noite | Status: ${status}`);
+        console.log(`Descrição: ${this.descricao}`);
     }
 
 
 
 }
+//aqui vou colocar uns casos teste pra agilizar testagem
+const cliente_teste = new cliente(0, "b", 123, "01/01/1500", "algum_email@gmail.com", "b");
+clientes.push(cliente_teste);
 
-Sistema.primeiro_menu();
+const funcionario_teste = new funcionario(0, "a", 124, "email@gmail.com", "a");
+funcionarios.push(funcionario_teste);
+
+
+
+Sistema.primeiro_menu(); //chama o primeiro menu para iniciar
 
