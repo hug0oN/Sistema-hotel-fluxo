@@ -206,7 +206,7 @@ class sistema{
         console.log("");
         console.log(`Bem vindo cliente ${cliente.nome}`);
         console.log("-------------------------------------------------------");
-        console.log("1. Ver meus dados");
+        console.log("1. Mudar meus dados");
         console.log("");
         console.log("2. Ver lista de quartos");
         console.log("");
@@ -220,7 +220,7 @@ class sistema{
         console.log("-------------------------------------------------------");
         const opcao = prompt("Escolha uma opção: ")
         if(opcao == 1){
-            return ver_dados(cliente);
+            return cliente.mudar_dados_cliente();
         }
         if(opcao == 2){
             return this.ver_lista_quartos();
@@ -249,7 +249,7 @@ class sistema{
         console.log("");
         console.log(`Bem vindo funcionário ${funcionario.nome}`);
         console.log("-------------------------------------------------------");
-        console.log("1. Ver meus dados");
+        console.log("1. Alterar meus dados");
         console.log("");
         console.log("2. Ver lista de quartos");
         console.log("");
@@ -265,7 +265,7 @@ class sistema{
         console.log("-------------------------------------------------------");
         const opcao = prompt("Escolha uma opção: ")
         if(opcao == 1){
-            return ver_dados(funcionario);
+            return funcionario.mudar_dados();
         }
         if(opcao == 2){
             return this.ver_lista_quartos();
@@ -332,10 +332,6 @@ if(Sistema.dev_mode == true){
 function mudar_senha(identificador){
     //algum jeito de deixar como asteristico quando digitar?
     
-}
-
-function ver_dados(identificador){
-
 }
 
 function ver_avaliacao(){
@@ -469,21 +465,149 @@ class funcionario{
 
     }
 
-    mudar_dados(){
+    async mudar_dados(){
+        console.clear();
+        console.log("Alterar meus dados:");
+        console.log(`1. Nome atual: ${this.nome}`);
+        console.log(`2. Email atual: ${this.email}`);
+        console.log(`3. CPF atual: ${this.cpf}`);
+        console.log("4. Voltar sem alterar");
+        console.log("-------------------------------------------------------");
+        const opcao = prompt("Escolha qual dado deseja alterar: ");
+            if (opcao == 1) {
+                const novoNome = prompt("Digite o novo nome: ");
+                if (novoNome.trim() !== "") this.nome = novoNome;
+            } 
+            else if (opcao == 2) {
+                const novoEmail = prompt("Digite o novo email: ");
+                if (novoEmail.trim() !== "") this.email = novoEmail;
+            } 
+            else if (opcao == 3) {
+                const novoCpf = prompt("Digite o novo CPF: ");
+                if (novoCpf.trim() !== "") this.cpf = novoCpf;
+            } 
+            else if (opcao == 4) {
+                return await voltar();
+            } 
+            else {
+                console.log("Opção inválida.");
+                await setTimeout(1000);
+                return await this.mudar_dados();
+            }
+        console.clear();
+        console.log("Dados atualizados com sucesso!");
+        await setTimeout(1500);
+        return await voltar();
+    }
+
+    async excluir_quarto(){
+        console.clear();
+        console.log("Excluindo quarto:");
+
+        if (lista_quartos.length === 0) {
+            console.log("Nenhum quarto cadastrado para excluir.");
+            console.log("");
+            prompt("Pressione ENTER para voltar...");
+            return await voltar();
+        }
+        lista_quartos.forEach(q => q.exibir_detalhes());//imprime todas as opcao de quarto 
+        console.log("-------------------------------------------------------");
+
+        const idQuarto = prompt("Digite o ID do quarto que deseja excluir: ");
+        const index = lista_quartos.findIndex(q => q.id == idQuarto);
+
+        if (index === -1) { //ver se esse quarto existe
+            console.log("Quarto não encontrado!");
+            await setTimeout(1500);
+            return await voltar();
+        }
+        lista_quartos.splice(index, 1);//elimina o quarto
+
+        console.clear();
+        console.log("Quarto removido com sucesso!");
+        await setTimeout(1500);
+        return await voltar();
 
     }
 
-    excluir_quarto(){
+    async editar_quartos(){
+        console.clear();
+        console.log("Editar quartos:");
+        if (lista_quartos.length === 0) { //ver se tem algum quarto né
+            console.log("Nenhum quarto cadastrado para editar.");
+            console.log("");
+            prompt("Pressione ENTER para voltar...");
+            return await voltar();
+        }
+        lista_quartos.forEach(q => q.exibir_detalhes());//assumindo que quartos existam, printa eles
+        console.log("-------------------------------------------------------");
+
+        const idQuarto = prompt("Digite o ID do quarto que deseja editar: ");
+        const quarto = lista_quartos.find(q => q.id == idQuarto);
+
+        if (!quarto) {
+            console.log("Quarto não encontrado!");
+            await setTimeout(1500);
+            return await voltar();
+        }
+        console.clear();
+        console.log(`Editando Quarto ${quarto.numero} (Pressione ENTER sem digitar para manter o valor atual)`);
+        const novoNumero = prompt(`Novo Número [${quarto.numero}]: `);
+        const novoCamas = prompt(`Nova Qtd. Camas [${quarto.n_camas}]: `);
+        const novoPreco = prompt(`Novo Preço [${quarto.preco}]: `);
+        const novaDescricao = prompt(`Nova Descrição [${quarto.descricao}]: `);
+        //aqui vou fazer dessa maneira que dá para mudar os dados do quarto mais rápido
+        //sem ter que abrir o editor pra cada info que for mudar
+        //ele pede input de todos, e se der enter, a string ta vazia entao continua com o valor antigo
+        if (novoNumero.trim() !== "") quarto.numero = novoNumero; 
+        //essa funcao trim() é pra elimicar espaço em branco
+        //ficava dando espaço sem querer e deu um erro, entao botei nesse caso
+        if (novoCamas.trim() !== "") quarto.n_camas = Number(novoCamas);
+        if (novoPreco.trim() !== "") quarto.preco = Number(novoPreco);
+        if (novaDescricao.trim() !== "") quarto.descricao = novaDescricao;
+
+        console.clear();
+        console.log("Quarto atualizado com sucesso!");
+        await setTimeout(1500);
+        return await voltar();
+
 
     }
+    async ver_lista_clientes(){
+        console.clear();
+        console.log("Lista de clientes:");
 
-    editar_quartos(){
+        if (clientes.length === 0) {//ver se tem algum cliente
+            console.log("Nenhum cliente cadastrado no sistema.");
+        } 
+        else { //imprime no mesmo estilo do 
+            clientes.forEach(c => {
+                console.log(`[ID: ${c.id}] Nome: ${c.nome} | CPF: ${c.cpf} | Email: ${c.email} | Nasc: ${c.data_nasc}`);
+                console.log("-------------------------------------------------------");
+            });
+        }
+        console.log("");
+        prompt("Pressione ENTER para voltar...");
+        return await voltar();
 
     }
-    ver_lista_clientes(){
+    async ver_lista_funcionarios(){ //literalmente a mesma coisa do ver_lista_clientes
+        console.clear();
+        console.log("Lista de funcionários");
 
-    }
-    ver_lista_funcionarios(){
+        if (funcionarios.length === 0) {
+            console.log("Nenhum funcionário cadastrado no sistema.");
+        } 
+        else {
+            funcionarios.forEach(f => {
+                console.log(`[ID: ${f.id}] Nome: ${f.nome} | CPF: ${f.cpf} | Email: ${f.email}`);
+                console.log("-------------------------------------------------------");
+            });
+        }
+        console.log("");
+        prompt("Pressione ENTER para voltar...");
+        return await voltar();
+
 
     }
     async ver_lista_reservas(){
@@ -623,7 +747,44 @@ class cliente{
         return await voltar();
     }
 
-    mudar_dados_cliente(){
+    async mudar_dados_cliente(){
+        console.clear();
+        console.log("Alterar meus dados:");
+        console.log(`1. Nome atual: ${this.nome}`);
+        console.log(`2. Email atual: ${this.email}`);
+        console.log(`3. CPF atual: ${this.cpf}`);
+        console.log(`4. Data de nascimento: ${this.data_nasc}`);
+        console.log("5. Voltar sem alterar");
+        console.log("-------------------------------------------------------");
+        const opcao = prompt("Escolha qual dado deseja alterar: ");
+            if (opcao == 1) {
+                const novoNome = prompt("Digite o novo nome: ");
+                if (novoNome.trim() !== "") this.nome = novoNome;
+            } 
+            else if (opcao == 2) {
+                const novoEmail = prompt("Digite o novo email: ");
+                if (novoEmail.trim() !== "") this.email = novoEmail;
+            } 
+            else if (opcao == 3) {
+                const novoCpf = prompt("Digite o novo CPF: ");
+                if (novoCpf.trim() !== "") this.cpf = novoCpf;
+            } 
+            else if (opcao == 4) {
+                const novaData = prompt("Digite o novo CPF: ");
+                if (novaData.trim() !== "") this.data_nasc = novaData;
+            } 
+            else if (opcao == 5) {
+                return await voltar();
+            } 
+            else {
+                console.log("Opção inválida.");
+                await setTimeout(1000);
+                return await this.mudar_dados_cliente();
+            }
+        console.clear();
+        console.log("Dados atualizados com sucesso!");
+        await setTimeout(1500);
+        return await voltar();
 
     }
     checar_Senha(senha_proposta){
