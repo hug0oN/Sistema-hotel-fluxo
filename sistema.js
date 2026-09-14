@@ -8,6 +8,7 @@ let proximoIdFuncionario = 1;
 let proximoIdCliente = 1; //aqui a parte de id dos objetos
 let proximoIdQuarto = 1;
 let proximoIdReserva = 1;
+let proximoIdAvaliacao = 1;
 
 let usuario_logado;
 
@@ -16,6 +17,7 @@ const funcionarios = [];
 const clientes = [];
 const lista_quartos = [];
 const reservas = [];
+let avaliacoes = [];
 
 class sistema{
     constructor(){ 
@@ -216,7 +218,9 @@ class sistema{
         console.log("");
         console.log("5. Ver minhas reservas");
         console.log("");
-        console.log("6. Sair");
+        console.log("6. Avaliar estadia");
+        console.log("");
+        console.log("7. Sair");
         console.log("-------------------------------------------------------");
         const opcao = prompt("Escolha uma opção: ")
         if(opcao == 1){
@@ -235,6 +239,9 @@ class sistema{
             return cliente.ver_reservas();
         }
         if(opcao == 6){
+            return cliente.avaliar_estadia();
+        }
+        if(opcao == 7){
             this.usuario_logado = null; //reseta o usuario logado pra voltar pro menu principal
             console.clear();
             return voltar();
@@ -261,7 +268,9 @@ class sistema{
         console.log("");
         console.log("6. Adicionar quarto");
         console.log("");
-        console.log("7. Sair");
+        console.log("7. Ver avaliações");
+        console.log("");
+        console.log("8. Sair");
         console.log("-------------------------------------------------------");
         const opcao = prompt("Escolha uma opção: ")
         if(opcao == 1){
@@ -283,6 +292,9 @@ class sistema{
             return funcionario.add_quarto();
         }
         if(opcao == 7){
+            return funcionario.ver_todas_avaliacoes();
+        }
+        if(opcao == 8){
             this.usuario_logado = null; //reseta o usuario logado pra voltar pro menu principal
             console.clear();
             return voltar();
@@ -371,10 +383,7 @@ class reserva{
     }
     check_out(){
 
-        this.status = "Concluída."
-    }
-    avaliar_estadia(){
-
+        this.status = "Concluída"
     }
     exibir_detalhes() { //funcao a ser chamada quando o cliente for ver as suas reservas
         console.log(`[ID Reserva: ${this.id}] Quarto ${this.quarto.numero} | Cliente: ${this.cliente.nome}`);
@@ -521,7 +530,7 @@ class funcionario{
             await setTimeout(1500);
             return await voltar();
         }
-        lista_quartos.splice(index, 1);//elimina o quarto
+        lista_quartos.splice(index, 1);//elimina o quarto :(
 
         console.clear();
         console.log("Quarto removido com sucesso!");
@@ -629,6 +638,29 @@ class funcionario{
     }
     checar_Senha(senha_proposta){
         return this.#senha == senha_proposta; //verificaçao da senha, ja que é privada 
+    }
+    async ver_todas_avaliacoes(){
+        console.clear();
+        console.log("Lista de avaliações no sistema")
+        if (avaliacoes.length === 0) {
+            console.log("Nenhuma avaliação cadastrada no sistema.");
+        } 
+        else {
+            //faz a media das notas aqui
+            const somaNotas = avaliacoes.reduce((acc, curr) => acc + curr.nota, 0);//essa funcao entendi pouco, peguei do stackoverflow
+            const media = (somaNotas / avaliacoes.length).toFixed(1);
+            console.log(`Média Geral dos Clientes: ${media} / 5.0 ★`);
+            console.log("-------------------------------------------------------");
+            console.log("");
+
+            avaliacoes.forEach(a => {
+                a.exibir_avaliacao();
+                console.log("-------------------------------------------------------");
+                });
+        }
+        console.log("");
+        prompt("Pressione ENTER para voltar...");
+        return await voltar();//preciso testar essa funcao
     }
 
 }
@@ -790,19 +822,94 @@ class cliente{
     checar_Senha(senha_proposta){
         return this.#senha == senha_proposta; //verificaçao da senha, ja que é privada 
     }
+    async avaliar_estadia(){
+        console.clear();
+        console.log("Avaliando estadia:")
 
+        const reservasConcluidas = reservas.filter(r => r.cliente.id == this.id && r.status == "Concluída");
+        //procura reservas do cliente já concluídas e cria um array com elas
+
+        if (reservasConcluidas.length === 0) {
+            console.log("Você não possui estadias concluídas para avaliar.");
+            console.log("");
+            prompt("Pressione ENTER para voltar...");
+        return await voltar();
+        }
+        reservasConcluidas.forEach(r => r.exibir_detalhes()); //imprime as info das reservas
+        console.log("-------------------------------------------------------");
+        const idReserva = prompt("Digite o ID da reserva que deseja avaliar: ");
+        const reservaEncontrada = reservasConcluidas.find(r => r.id == idReserva);
+        //achar a reserva
+        if (!reservaEncontrada) {
+            console.log("Reserva não encontrada ou ainda não foi concluída!");
+            await setTimeout(1500);
+            return await voltar();
+        }
+        const jaAvaliada = avaliacoes.some(a => a.reserva.id == reservaEncontrada.id);
+        if (jaAvaliada) { //tem que verificar se ja foi avaliada
+            console.log("Esta reserva já foi avaliada anteriormente!");
+            await setTimeout(1500);
+            return await voltar();
+        }
+        let nota = Number(prompt("Digite uma nota de 1 a 5: "));
+        while (isNaN(nota) || nota < 1 || nota > 5) {//fica num loop até receber um valor válido
+        nota = Number(prompt("Nota inválida! Digite um valor entre 1 e 5: "));
+        }
+        const comentario = prompt("Escreva um comentário (opcional, aperte ENTER se não deseja comentar): ");
+
+        const novaAvaliacao = new avaliacao( //chama construtor 
+            proximoIdAvaliacao++,
+            this,
+            reservaEncontrada,
+            nota,
+            comentario
+            );
+        avaliacoes.push(novaAvaliacao);
+
+        console.log("");
+        console.log("Avaliação enviada com sucesso! Obrigado pelo feedback.");
+        await setTimeout(1500);
+        return await voltar();
+    }
+    async ver_minhas_avaliacoes() {
+        console.clear();
+        console.log("Minhas avaliações");
+
+        const minhasAvaliacoes = avaliacoes.filter(a => a.cliente.id === this.id);
+        //procura as avaliaç~eos desse cliente
+        if (minhasAvaliacoes.length === 0) {
+            console.log("Você ainda não fez nenhuma avaliação.");
+        } 
+        else {//se tiver avaliaç~eos, imprime elas
+            minhasAvaliacoes.forEach(a => {
+                a.exibir_detalhes();
+                console.log("-------------------------------------------------------");
+        });
+    }
+        console.log("");
+        prompt("Pressione ENTER para voltar...");
+        return await voltar();
+    }
 
 }
 
 class avaliacao{ 
     //escolhi fazer as avaliacoes como uma classe separada
-    constructor(cliente, estrelas, descricao, data){
-        this.autor = cliente;
-        this.estrelas = estrelas;
-        this.descricao = descricao;
-        this.data = data;
+    constructor(id, cliente, reserva, nota, comentario = ""){//comentario é uma string vazia por padrao
+        this.id = id;
+        this.cliente = cliente;
+        this.reserva = reserva;
+        this.nota = nota;
+        this.comentario = comentario; 
     }
-    exibir_avaliacao(){
+    exibir_avaliacao(){//printar a avalição na tela 
+        console.log(`[Avaliação ID: ${this.id}]`);
+        console.log(`Cliente: ${this.cliente.nome}`);
+        console.log(`Quarto: ${this.reserva.quarto.numero}`);
+        console.log(`Nota: ${this.nota}`);
+        if (this.comentario) {//verifica se tm comentario, entao vai ser opcional
+            console.log(`Comentário: "${this.comentario}"`);
+        }
 
     }
 
