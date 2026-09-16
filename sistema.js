@@ -5,13 +5,14 @@ const { setTimeout } = require('node:timers/promises'); //aqui uma parte que pre
 //poder colocar um intervalo entre mensagens (uma funcao pra esperar)
 
 let proximoIdFuncionario = 1;
-let proximoIdCliente = 1; //aqui a parte de id dos objetos
+let proximoIdCliente = 1; 
 let proximoIdQuarto = 1;
 let proximoIdReserva = 1;
 let proximoIdAvaliacao = 1;
 
 let usuario_logado;
 
+//aqui a parte de id dos objetos
 //array de todos os objetos a serem armazenados
 const funcionarios = [];
 const clientes = [];
@@ -33,12 +34,11 @@ class sistema{
         else{
             this.dev_mode = false;
             console.log("Modo dev desativado");
-
         }
     }
     async primeiro_menu(){ //primeiro menu que abre (async precisa pro delay das mensagens)
         console.log("-------------------------------------------------------") //usar essas linhas como divisoria
-        console.log("Bem-Vindo!");
+        console.log("Bem-Vindo ao sistema do Hotel F-Luxo!");
         await setTimeout(1000);
         console.log("") //como eu ainda nao sei pular uma linha vou colocar uns logs vazios
         //aqui pesquisar alguma maneira de criar uma janela de input e multipla escolha 
@@ -61,7 +61,7 @@ class sistema{
 
         await setTimeout(1000);
         
-        if(Sistema.dev_mode == true){
+        if(this.dev_mode == true){
             console.log("");
             console.log("4. Desativar Modo Dev");
         }
@@ -78,15 +78,17 @@ class sistema{
             return await this.primeiro_menu();
         }
         if(opcao == 4){
-            console.log("MODO DEV ATIVADO");
             this.ativar_dev();
-            this.primeiro_menu(); //volta pro menu depois de ativar o dev
+            return this.primeiro_menu(); //volta pro menu depois de ativar o dev
         }
-        else{
+        if(opcao == 3){
             this.sair();
         }
+        else{
+            console.log("Escolha Inválida!");
+            this.primeiro_menu();
+        }
     }
-    
     async login(){
 
         if(Sistema.dev_mode == true){
@@ -117,10 +119,10 @@ class sistema{
             else{
                 console.clear();
                 console.log("Senha ou usuário incorretos! Tente novamente!");
-                this.login();
+                return await this.login();
             }
         }
-        if(tipo_login == 2){
+        else if(tipo_login == 2){
             const clienteEncontrado = clientes.find(c => c.nome === nome_login); //procurar o cliente com mesmo nome na lista
             if(clienteEncontrado && clienteEncontrado.checar_Senha(senha_login)){
                 console.clear();
@@ -133,19 +135,19 @@ class sistema{
             else{
                 console.clear();
                 console.log("Senha ou usuário incorretos! Tente novamente!");
-                this.login();
+                return await this.login();
             }
         }
         else{
             console.clear();
             console.log("Opção inválida!");
-            this.login();
+            return await this.login();
         }
 
 
     }
     async cadastro(){
-        if(Sistema.dev_mod == true){
+        if(Sistema.dev_mode == true){
         console.log("DEV: Iniciando processo de cadastro");
         }
         console.log("Você é funcionário ou cliente?"); //Escolher entre funcionario e cliente
@@ -246,6 +248,10 @@ class sistema{
             console.clear();
             return voltar();
         }
+        else{
+            console.log("Opção inválida!");
+            return this.menu_cliente(cliente);
+        }
 
 
 
@@ -270,7 +276,9 @@ class sistema{
         console.log("");
         console.log("7. Ver avaliações");
         console.log("");
-        console.log("8. Sair");
+        console.log("8. Excluir quarto");
+        console.log("");
+        console.log("9. Sair");
         console.log("-------------------------------------------------------");
         const opcao = prompt("Escolha uma opção: ")
         if(opcao == 1){
@@ -294,10 +302,17 @@ class sistema{
         if(opcao == 7){
             return funcionario.ver_todas_avaliacoes();
         }
-        if(opcao == 8){
+        if(opcao == 9){
             this.usuario_logado = null; //reseta o usuario logado pra voltar pro menu principal
             console.clear();
             return voltar();
+        }
+        if(opcao == 8){//os if na ordem errada porque eu esqueci essa opçao
+            return funcionario.excluir_quarto();
+        }
+        else{
+            console.log("Opção inválida!");
+            return this.menu_funcionario(funcionario);
         }
     }
 
@@ -339,17 +354,6 @@ if(Sistema.dev_mode == true){
 
 //aqui algumas funcoes que eu deixei como globais ja que ambos clientes e funcionarios
 //acessam, usando os id unicos para identificar
-
-
-function mudar_senha(identificador){
-    //algum jeito de deixar como asteristico quando digitar?
-    
-}
-
-function ver_avaliacao(){
-    //aqui puxar todas as avaliacoes em forma de lista para escolher qual visualizar
-
-}
 
 function voltar(){ //funcao global de voltar, que pode ser usado por qualquer usuario
     if (!Sistema.usuario_logado) {
@@ -462,7 +466,7 @@ class funcionario{
         const descricao = prompt("Descrição breve: ");
         const id = proximoIdQuarto++;
 
-        const novoQuarto = new Quarto(id, numero, Number(n_camas), Number(preco), descricao);
+        const novoQuarto = new quarto(id, numero, Number(n_camas), Number(preco), descricao);
 
         lista_quartos.push(novoQuarto); //adiciona o quarto na lista la em cima
 
@@ -665,7 +669,6 @@ class funcionario{
 
 }
 
-
 class cliente{
     #senha; //mesmo caso do funcionario
     constructor(id,nome,cpf,data_nasc,email,senha){
@@ -728,7 +731,7 @@ class cliente{
     async cancelar_reserva(){
         console.clear();
         console.log("Cancelar reserva:");
-        const minhasReservasAtivas = reservas.filter(r => r.cliente.id === this.id && r.status === "Normal"); //procura reservas 
+        const minhasReservasAtivas = reservas.filter(r => r.cliente.id === this.id && r.status === "Normal" || r.status === "Ativa"); //procura reservas 
         //do cliente que estejam Normais
 
         if (minhasReservasAtivas.length === 0) {//se nao tiver reservas volta pro menu anterior
@@ -802,7 +805,7 @@ class cliente{
                 if (novoCpf.trim() !== "") this.cpf = novoCpf;
             } 
             else if (opcao == 4) {
-                const novaData = prompt("Digite o novo CPF: ");
+                const novaData = prompt("Digite a nova data de nascimento: ");
                 if (novaData.trim() !== "") this.data_nasc = novaData;
             } 
             else if (opcao == 5) {
@@ -882,7 +885,7 @@ class cliente{
         } 
         else {//se tiver avaliaç~eos, imprime elas
             minhasAvaliacoes.forEach(a => {
-                a.exibir_detalhes();
+                a.exibir_avaliacao();
                 console.log("-------------------------------------------------------");
         });
     }
@@ -915,7 +918,7 @@ class avaliacao{
 
 }
 
-class Quarto{
+class quarto{
     constructor(id, numero, n_camas, preco, descricao){
         this.id = id;
         this.n_camas = n_camas;
@@ -945,10 +948,10 @@ clientes.push(cliente_teste);
 const funcionario_teste = new funcionario(0, "a", 124, "email@gmail.com", "a");
 funcionarios.push(funcionario_teste);
 
-const quarto_teste1 = new Quarto(proximoIdQuarto++, "101", 1, 150, "Quarto Solteiro Confortável")
+const quarto_teste1 = new quarto(proximoIdQuarto++, "101", 1, 150, "Quarto Solteiro Confortável")
 lista_quartos.push(quarto_teste1);
 
-const quarto_teste2 = new Quarto(proximoIdQuarto++, "102", 2, 280, "Quarto Casal Luxo")
+const quarto_teste2 = new quarto(proximoIdQuarto++, "102", 2, 280, "Quarto Casal Luxo")
 lista_quartos.push(quarto_teste2);
 
 
