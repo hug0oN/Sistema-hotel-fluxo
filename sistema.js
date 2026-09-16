@@ -941,6 +941,8 @@ class quarto{
 }
 
 //aqui vou colocar uns casos teste pra agilizar testagem
+
+/*
 //se deus quiser hugo do futuro vai lembrar de tirar isso antes de mandar
 const cliente_teste = new cliente(0, "b", 123, "01/01/1500", "algum_email@gmail.com", "b");
 clientes.push(cliente_teste);
@@ -953,6 +955,6 @@ lista_quartos.push(quarto_teste1);
 
 const quarto_teste2 = new quarto(proximoIdQuarto++, "102", 2, 280, "Quarto Casal Luxo")
 lista_quartos.push(quarto_teste2);
-
+*/
 
 Sistema.primeiro_menu(); //chama o primeiro menu para iniciar
